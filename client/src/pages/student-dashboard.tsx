@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Layout from "@/components/layout";
 import { useAuth } from "@/lib/auth-context";
-import { mockStudents } from "@/lib/mock-data";
+import { dataStore } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,19 @@ export default function StudentDashboard() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
-  const initialStudent = mockStudents.find((s) => s.email === user?.email) || mockStudents[0];
-  const [studentData, setStudentData] = useState(initialStudent);
+  // Get student data from the dataStore using the logged-in user's email
+  const studentFromStore = dataStore.findStudentByEmail(user?.email || "");
+  const [studentData, setStudentData] = useState(
+    studentFromStore || {
+      id: user?.id || "",
+      name: user?.name || "",
+      email: user?.email || "",
+      course: "Not Selected",
+      enrollmentDate: new Date().toISOString().split("T")[0],
+      status: "active",
+      gpa: 0.0,
+    }
+  );
 
   const handleUpdate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,7 +67,7 @@ export default function StudentDashboard() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" name="email" type="email" defaultValue={studentData.email} />
+                  <Input id="email" name="email" type="email" defaultValue={studentData.email} disabled />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="course">Course</Label>

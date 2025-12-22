@@ -83,3 +83,32 @@ export const mockStudents: Student[] = [
     gpa: 3.2,
   },
 ];
+
+// Global data store for dynamically created users and students
+let allUsers = [...mockUsers];
+let allStudents = [...mockStudents];
+
+export const dataStore = {
+  getAllUsers: () => allUsers,
+  getAllStudents: () => allStudents,
+  addUser: (user: User) => {
+    allUsers.push(user);
+  },
+  addStudent: (student: Student) => {
+    allStudents.push(student);
+  },
+  findUserByEmail: (email: string) => {
+    return allUsers.find((u) => u.email === email);
+  },
+  findStudentByEmail: (email: string) => {
+    return allStudents.find((s) => s.email === email);
+  },
+  emailExists: (email: string) => {
+    return allUsers.some((u) => u.email === email);
+  },
+};
+
+export function getTodayDate(): string {
+  const today = new Date();
+  return today.toISOString().split("T")[0];
+}

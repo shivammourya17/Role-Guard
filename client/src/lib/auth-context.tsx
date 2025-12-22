@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers, mockStudents, User, Student } from "./mock-data";
+import { User, Student, dataStore, getTodayDate } from "./mock-data";
 
 type AuthContextType = {
   user: User | null;
@@ -31,8 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Simple mock auth logic
-    const foundUser = mockUsers.find((u: User) => u.email === email && u.role === role);
+    // Check if user exists with any role - prevent login if email doesn't match role
+    const allUsers = dataStore.getAllUsers();
+    const foundUser = allUsers.find((u: User) => u.email === email && u.role === role);
 
     if (foundUser) {
       setUser(foundUser);
@@ -56,34 +57,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const existingUser = mockUsers.find((u: User) => u.email === email);
-    if (existingUser) {
+    // Check if email already exists (across any role)
+    if (dataStore.emailExists(email)) {
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: "User already exists.",
+        description: "This email is already registered. Please use a different email.",
       });
       setIsLoading(false);
-      throw new Error("User exists");
+      throw new Error("Email already exists");
     }
 
+    const userId = Math.random().toString(36).substr(2, 9);
+    const userName = name || email.split("@")[0];
+
     const newUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: userId,
       email,
       role,
-      name: name || email.split("@")[0],
+      name: userName,
     };
 
-    // In a real app we would POST to server. Here we just update local state logic if we were tracking all users globally
-    // For this mock, we'll just log them in immediately
+    // Add user to store
+    dataStore.addUser(newUser);
+
+    // If registering as student, also create a student record
+    if (role === "student") {
+      const newStudent: Student = {
+        id: userId,
+        name: userName,
+        email,
+        course: "Not Selected",
+        enrollmentDate: getTodayDate(), // Live date - today
+        status: "active",
+        gpa: 0.0,
+      };
+      dataStore.addStudent(newStudent);
+    }
+
     setUser(newUser);
     localStorage.setItem("edu_user", JSON.stringify(newUser));
-    
+
     toast({
       title: "Account Created",
       description: "Welcome to EduDash!",
     });
-    
+
     setIsLoading(false);
   };
 
