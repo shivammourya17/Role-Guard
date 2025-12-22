@@ -8,19 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap, BookOpen, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
+import { GraduationCap } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().optional(),
 });
 
 export default function AuthPage() {
   const { login, register, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("login");
+  const [isSignup, setIsSignup] = useState(true);
   const [selectedRole, setSelectedRole] = useState<"admin" | "student">("student");
 
   const form = useForm<z.infer<typeof authSchema>>({
@@ -28,10 +27,10 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
+      name: "",
     },
   });
 
-  // Redirect after successful login
   useEffect(() => {
     if (user) {
       const redirectPath = user.role === "admin" ? "/dashboard/admin" : "/dashboard/student";
@@ -41,13 +40,11 @@ export default function AuthPage() {
 
   const onSubmit = async (data: z.infer<typeof authSchema>) => {
     try {
-      if (activeTab === "login") {
-        // Determine role by email for login
+      if (isSignup) {
+        await register(data.email, selectedRole, data.name);
+      } else {
         const role = data.email.includes("admin") ? "admin" : "student";
         await login(data.email, role);
-      } else {
-        // Use selected role for signup
-        await register(data.email, selectedRole);
       }
     } catch (error) {
       // Error handled in context
@@ -55,123 +52,120 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Side - Hero */}
-      <div className="hidden lg:flex flex-col justify-between bg-primary p-12 text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom_right,theme(colors.primary),theme(colors.blue.800))] opacity-90" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-20" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-2xl font-heading font-bold">
-            <GraduationCap className="h-8 w-8" />
-            <span>EduDash</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="text-center space-y-3 pb-6">
+          <div className="flex justify-center">
+            <div className="bg-primary text-primary-foreground p-3 rounded-lg">
+              <GraduationCap className="h-6 w-6" />
+            </div>
           </div>
-        </div>
+          <CardTitle className="text-3xl font-bold">EduDash</CardTitle>
+          <CardDescription>
+            {isSignup ? "Create your account to get started" : "Welcome back! Sign in to continue"}
+          </CardDescription>
+        </CardHeader>
 
-        <div className="relative z-10 max-w-lg space-y-6">
-          <h1 className="text-5xl font-heading font-bold leading-tight">
-            Manage your academic journey with confidence.
-          </h1>
-          <p className="text-lg text-primary-foreground/80 font-light">
-            A comprehensive platform for students and administrators to track progress, courses, and performance in one place.
-          </p>
-        </div>
-
-        <div className="relative z-10 flex gap-4 text-sm opacity-60">
-          <span>© 2024 EduDash Inc.</span>
-          <span>Privacy Policy</span>
-          <span>Terms</span>
-        </div>
-      </div>
-
-      {/* Right Side - Form */}
-      <div className="flex items-center justify-center p-8 bg-background">
-        <Card className="w-full max-w-md border-0 shadow-none">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              {activeTab === "login" ? "Welcome back" : "Create an account"}
-            </CardTitle>
-            <CardDescription>
-              Enter your credentials to access your dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Sign Up</TabsTrigger>
-              </TabsList>
-
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {activeTab === "register" && (
-                  <div className="space-y-2">
-                    <Label>Select Your Role</Label>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRole("student")}
-                        className={`flex-1 p-3 rounded-lg border-2 transition-all font-medium text-sm ${
-                          selectedRole === "student"
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border text-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        Student
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRole("admin")}
-                        className={`flex-1 p-3 rounded-lg border-2 transition-all font-medium text-sm ${
-                          selectedRole === "admin"
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border text-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        Admin
-                      </button>
-                    </div>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {isSignup && (
+              <>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Select Your Role</Label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("student")}
+                      className={`flex-1 p-3 rounded-lg border-2 font-medium text-sm transition-all ${
+                        selectedRole === "student"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      Student
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("admin")}
+                      className={`flex-1 p-3 rounded-lg border-2 font-medium text-sm transition-all ${
+                        selectedRole === "admin"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      Admin
+                    </button>
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="name@example.com" 
-                    {...form.register("email")}
-                  />
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    {...form.register("password")}
-                  />
-                  {form.formState.errors.password && (
-                    <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
-                  )}
                 </div>
 
-                <Button className="w-full" type="submit" disabled={isLoading}>
-                  {isLoading ? "Loading..." : activeTab === "login" ? "Sign In" : "Create Account"}
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="John Doe"
+                    {...form.register("name")}
+                  />
+                </div>
+              </>
+            )}
 
-                {activeTab === "login" && (
-                  <div className="mt-4 text-center text-sm text-muted-foreground bg-muted/50 p-4 rounded-md">
-                    <p className="font-semibold mb-1">Demo Credentials:</p>
-                    <p>Admin: admin@edu.com / password</p>
-                    <p>Student: alice@edu.com / password</p>
-                  </div>
-                )}
-              </form>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                {...form.register("email")}
+              />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                {...form.register("password")}
+              />
+              {form.formState.errors.password && (
+                <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+              )}
+            </div>
+
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? "Loading..." : isSignup ? "Create Account" : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isSignup ? "Already have an account?" : "Don't have an account?"}
+              <button
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  form.reset();
+                }}
+                className="ml-2 text-primary font-semibold hover:underline"
+              >
+                {isSignup ? "Sign In" : "Sign Up"}
+              </button>
+            </p>
+          </div>
+
+          {!isSignup && (
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+              <p className="font-semibold text-blue-900 mb-2">Demo Accounts:</p>
+              <div className="space-y-1 text-blue-800 text-xs">
+                <p><span className="font-medium">Admin:</span> admin@edu.com / password</p>
+                <p><span className="font-medium">Student:</span> alice@edu.com / password</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
