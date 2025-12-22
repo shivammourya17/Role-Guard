@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -18,9 +18,10 @@ const authSchema = z.object({
 });
 
 export default function AuthPage() {
-  const { login, register, isLoading } = useAuth();
+  const { login, register, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("login");
+  const [selectedRole, setSelectedRole] = useState<"admin" | "student">("student");
 
   const form = useForm<z.infer<typeof authSchema>>({
     resolver: zodResolver(authSchema),
@@ -30,18 +31,23 @@ export default function AuthPage() {
     },
   });
 
+  // Redirect after successful login
+  useEffect(() => {
+    if (user) {
+      const redirectPath = user.role === "admin" ? "/dashboard/admin" : "/dashboard/student";
+      setLocation(redirectPath);
+    }
+  }, [user, setLocation]);
+
   const onSubmit = async (data: z.infer<typeof authSchema>) => {
     try {
       if (activeTab === "login") {
-        // For demo purposes, we try to login as admin first, then student if it fails, 
-        // OR we can just add a role selector. 
-        // Let's keep it simple: Determine role by email for the mock, or just try both.
-        // Actually, let's just default to "admin" for "admin@edu.com" and "student" for others for the LOGIN flow.
+        // Determine role by email for login
         const role = data.email.includes("admin") ? "admin" : "student";
         await login(data.email, role);
       } else {
-        const role = data.email.includes("admin") ? "admin" : "student";
-        await register(data.email, role);
+        // Use selected role for signup
+        await register(data.email, selectedRole);
       }
     } catch (error) {
       // Error handled in context
@@ -97,6 +103,35 @@ export default function AuthPage() {
               </TabsList>
 
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {activeTab === "register" && (
+                  <div className="space-y-2">
+                    <Label>Select Your Role</Label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRole("student")}
+                        className={`flex-1 p-3 rounded-lg border-2 transition-all font-medium text-sm ${
+                          selectedRole === "student"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        Student
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRole("admin")}
+                        className={`flex-1 p-3 rounded-lg border-2 transition-all font-medium text-sm ${
+                          selectedRole === "admin"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        Admin
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input 

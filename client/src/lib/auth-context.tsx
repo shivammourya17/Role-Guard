@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     // Simple mock auth logic
-    const foundUser = mockUsers.find((u) => u.email === email && u.role === role);
+    const foundUser = mockUsers.find((u: User) => u.email === email && u.role === role);
 
     if (foundUser) {
       setUser(foundUser);
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    const existingUser = mockUsers.find((u) => u.email === email);
+    const existingUser = mockUsers.find((u: User) => u.email === email);
     if (existingUser) {
       toast({
         variant: "destructive",

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth-context";
+import { useEffect } from "react";
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,9 +15,14 @@ import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const isAdmin = user?.role === "admin";
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
+  };
 
   const navItems = isAdmin ? [
     { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
@@ -67,7 +73,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Button 
             variant="outline" 
             className="w-full justify-start text-sidebar-foreground/70" 
-            onClick={logout}
+            onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />
             Log Out
